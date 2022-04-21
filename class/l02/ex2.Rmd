@@ -1,0 +1,226 @@
+---
+title: "class_0419"
+author: "Yuma Tanii"
+date: "2022/4/19"
+output: html_document
+---
+```{r chapter2-1}
+# math
+2+2
+log(1)
+exp(1)
+sqrt(4)
+```
+```{r chapter2-2}
+
+#object
+my_obj <- 48
+My_obj <- 42
+
+#object2
+my_obj2 <- "R is cool."
+print(my_obj2)
+
+#add
+my_obj + My_obj
+#my_obj + my_obj2 #NG
+
+my_obj3 <- "Hello."
+#my_obj2 + my_obj3 #NG
+
+paste(my_obj3, my_obj2)#char同士
+
+```
+```{r chapter2-3}
+#vector
+my_vec <- c(2,3,1,6,4,3,3,7)
+print(my_vec)
+
+mean(my_vec)　#平均
+var(my_vec) # 分散
+sd(my_vec) # 標準偏差
+length(my_vec) #データ長
+
+my_vec2 <- c(2,3,1,6,4,3,3,7,NA)
+var(my_vec2)
+var(my_vec2,na.rm = TRUE)
+
+my_seq = 1:10
+print(my_seq)
+
+my_seq2 = seq(from=1,to=5,by=0.5)
+print(my_seq2)
+```
+
+```{r chapter2-4}
+print(my_vec)
+my_vec[3]
+val_3 <- my_vec[3]
+
+my_vec[c(1,5,6,8)]
+id = c(1,5,6,8)
+my_vec[id] #2行↑と同じ
+
+#logical index
+my_vec[my_vec > 4]
+id2 <- my_vec > 4
+my_vec[id2]#2行↑と同じ
+
+id3 <- (my_vec < 6 & my_vec > 2) #and &
+my_vec[id3]
+id4 <- (my_vec > 6 | my_vec < 3) #or  |
+my_vec[id4]
+```
+
+```{r chapter3-1}
+num <- 2.2
+char <- "hello"
+logi <- TRUE #FALSE
+
+class(num)
+class(char)
+class(logi)
+
+is.numeric(num)
+is.character(char)
+is.logical(char)
+
+num_char <- as.character(num) #型変換
+print(num_char)
+class(num_char)
+```
+
+```{r chapter3-2}
+my_mat <- matrix(1:16, nrow=4, byrow=TRUE)　#行列
+my_mat
+
+my_array <- array(1:16, dim=c(2,4,2))　#3次元以上のデータ
+my_array
+my_array[,,2]
+
+
+my_mat
+rownames(my_mat) <- c("A","B","C","D")
+colnames(my_mat) <- c("a","b","c","d")
+my_mat
+
+
+#list
+list_1 <- list(c("black", "yellow", "orange"),
+               c(TRUE, TRUE, FALSE, TRUE, FALSE, FALSE),
+               matrix(1:6, nrow = 3))
+
+list_1
+
+list_2 <- list(colours = c("black", "yellow", "orange"), 
+               evaluation = c(TRUE, TRUE, FALSE, TRUE, FALSE, FALSE), 
+               time = matrix(1:6, nrow = 3))
+list_2
+list_2$colours
+list_2[[2]]
+str(list_2) #structure 構造を教えてくれる
+
+#data frames
+p.height <- c(180, 155, 160, 167, 181)
+p.weight <- c(65, 50, 52, 58, 70)
+p.names <- c("Joanna", "Charlotte", "Helen", "Karen", "Amy")
+
+dataf <- data.frame(height = p.height, weight = p.weight, names = p.names)
+dataf
+
+dim(dataf)
+str(dataf)
+```
+
+```{r chapter3-3}
+library(readr)
+flower <- read_csv("flower.csv")
+View(flower)
+
+```
+
+```{r chapter3-4}
+flower$height
+summary(flower$height) #特徴指標の表示
+
+flower[1,4]
+flower[,c(1,4)] #select columns(ここでは1列目と4列目,treat and height)
+flower[c(1,4),] #slicing rows (ここでは上から1個目と4個目のデータ)
+```
+
+```{r tidyverse}
+library(tidyverse)
+flower %>% select(height)
+flower %>% select(height, weight)
+flower %>% select(-height, -weight) #マイナス検索
+
+flower_height <- flower %>% select(height)
+flower_height
+
+head(flower)
+
+flower %>% filter(nitrogen == "high")
+flower %>%
+  filter(nitrogen == "high") %>%
+  filter(height > 13) %>%
+  select(height,weight)
+
+#dataframe ver.
+flower$nitrogen == "high"
+flower$height > 13
+flower[flower$nitrogen == "high" & flower$height > 13, c("height", "weight")]
+
+#add column
+```
+
+
+```{r chapter6-3}
+#regression
+#weight ~ height + leafarea
+
+ans <- lm(weight ~ height + leafarea, data = flower)
+summary(ans)
+
+ans2 <- lm(weight ~ height * leafarea, data = flower)
+summary(ans2)
+```
+
+```{r chapter7}
+test_func <- function(x){
+  y <- x+1
+  return(y)
+}
+
+test_func(3)
+
+
+for(i in 1:5){
+  print(i)
+}
+
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
