@@ -1,0 +1,45 @@
+---
+title: "Chap5"
+author: "Yuma Tanii"
+date: "2022/5/3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r ready}
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+```
+
+```{r 5.2.1}
+seine_simp = st_simplify(seine, dTolerance = 2000)
+#容量を減らすため簡潔化
+plot(seine)
+plot(seine_simp)
+
+object.size(seine)      #18096 bytes
+object.size(seine_simp) #9112 bytes
+
+#ポリゴンの簡潔化
+us_states2163 = st_transform(us_states, 2163)
+
+us_states_simp1 = st_simplify(us_states2163, dTolerance = 100000)  # 100 km
+
+plot(us_states2163)
+plot(us_states_simp1)
+# proportion of points to retain (0-1; default 0.05)
+us_states2163$AREA = as.numeric(us_states2163$AREA)
+us_states_simp2 = rmapshaper::ms_simplify(us_states2163, keep = 0.01,
+                                          keep_shapes = TRUE)
+plot(us_states_simp2)
+```
+
+
+
+
