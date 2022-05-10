@@ -1,0 +1,267 @@
+---
+title: "Ex0510"
+author: "Yuma Tanii"
+date: "2022/5/10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r ready}
+library(sf)
+library(raster)
+library(dplyr)
+library(stringr) # for working with strings (pattern matching)
+library(tidyr)   # for unite() and separate()
+library(spData)
+library(spDataLarge)
+```
+
+```{r 3.2.3}
+world
+coffee_data
+world_coffee = left_join(world, coffee_data) #テーブルの結合
+#Joining, by = "name_long" ：name_longという共通部分で結合した
+class(world_coffee) #[1] "sf"         "tbl_df"     "tbl"        "data.frame"
+
+world_coffee
+
+names(world_coffee)
+#>  [1] "iso_a2"                 "name_long"              "continent"             
+#>  [4] "region_un"              "subregion"              "type"                  
+#>  [7] "area_km2"               "pop"                    "lifeExp"               
+#> [10] "gdpPercap"              "geom"                   "coffee_production_2016"
+#> [13] "coffee_production_2017"
+plot(world_coffee["coffee_production_2017"])
+# 本来地理データのないコーヒー生産量のデータをあらわせるようになった
+
+world_coffee_inner = inner_join(world, coffee_data)
+#> Joining, by = "name_long"
+#inner_join:該当しない国はデータからはじかれるように結合
+nrow(world_coffee_inner)
+#> [1] 45
+world_coffee_inner
+
+coffee_renamed = rename(coffee_data, nm = name_long)
+world_coffee2 = left_join(world, coffee_renamed, by = c(name_long = "nm"))
+
+world_coffee2
+
+
+```
+```{r 3.2.4}
+world_new = world # do not overwrite our original data
+#新しい要素を追加する（↓人口密度）
+world_new$pop_dens = world_new$pop / world_new$area_km2
+
+#world_new
+
+#同等の処理（格納はしていない）
+#world %>% mutate(pop_dens = pop/area_km2)
+
+#新しい要素とgeom以外のデータを破棄するtransmute.
+#world_new2 <- world %>% transmute(pop_dens = pop / area_km2)
+#world_new2
+
+```
+
+```{r 3.3}
+elev = raster(nrows = 6, ncols = 6, res = 0.5,
+              xmn = -1.5, xmx = 1.5, ymn = -1.5, ymx = 1.5,
+              vals = 1:36)
+
+#plot(elev)
+grain_order = c("clay", "silt", "sand")
+grain_char = sample(grain_order, 36, replace = TRUE)
+grain_fact = factor(grain_char, levels = grain_order)
+grain = raster(nrows = 6, ncols = 6, res = 0.5, 
+               xmn = -1.5, xmx = 1.5, ymn = -1.5, ymx = 1.5,
+               vals = grain_fact)
+#grain_char
+#grain_fact
+plot(grain)
+```
+```{r 3.3.1}
+#行と列の指定
+#elev[1, 1]
+#ID指定
+#elev[1]
+
+r_stack = stack(elev, grain)
+names(r_stack) = c("elev", "grain")
+# three ways to extract a layer of a stack
+#raster::subset(r_stack, "elev")
+#r_stack[["elev"]]
+#r_stack$elev
+
+elev[1, 1] = 0
+#elev[]
+#>  [1]  0  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+#> [26] 26 27 28 29 30 31 32 33 34 35 36
+
+elev[1, 1:2] = 0
+#elev[]
+```
+```{r 4.1.1}
+#カンタベリーだけ取り出す
+canterbury = nz %>% filter(Name == "Canterbury")
+canterbury_height = nz_height[canterbury, ]
+
+#nz_height
+#nz_height[canterbury, , op = st_disjoint]
+
+#sparse geometry
+sel_sgbp = st_intersects(x = nz_height, y = canterbury)
+#sel_sgbp
+class(sel_sgbp)
+#> [1] "sgbp" "list"
+sel_logical = lengths(sel_sgbp) > 0
+#sel_logical
+canterbury_height2 = nz_height[sel_logical, ]
+
+```
+```{r 4.2}
+# create a polygon
+a_poly = st_polygon(list(rbind(c(-1, -1), c(1, -1), c(1, 1), c(-1, -1))))
+a = st_sfc(a_poly)
+# create a line
+l_line = st_linestring(x = matrix(c(-1, -1, -0.5, 1), ncol = 2))
+l = st_sfc(l_line)
+# create points
+p_matrix = matrix(c(0.5, 1, -1, 0, 0, 1, 0.5, 1), ncol = 2)
+p_multi = st_multipoint(x = p_matrix)
+p = st_cast(st_sfc(p_multi), "POINT")
+
+#ポイントpとポリゴンaは接しているか？(1,2は接している)
+#st_intersects(p, a)
+#st_intersects(p, a, sparse = FALSE)
+#否定版（末尾の[, 1]はベクターに変形している）
+#st_disjoint(p, a, sparse = FALSE)[, 1]
+
+#真に領域に入っているか？
+#st_within(p, a, sparse = FALSE)[, 1]
+#> [1]  TRUE FALSE FALSE FALSE
+
+#境界線上の点か？
+#st_touches(p, a, sparse = FALSE)[, 1]
+#> [1] FALSE  TRUE FALSE FALSE
+
+#乱数の生成
+set.seed(2018) # set seed for reproducibility
+
+(bb_world = st_bbox(world)) # the world's bounds
+#>   xmin   ymin   xmax   ymax 
+#> -180.0  -90.0  180.0   83.6
+random_df = tibble(
+  x = runif(n = 10, min = bb_world[1], max = bb_world[3]),
+  y = runif(n = 10, min = bb_world[2], max = bb_world[4])
+)
+random_points = random_df %>% 
+  st_as_sf(coords = c("x", "y")) %>% # set coordinates
+  st_set_crs(4326) # set geographic CRS
+
+#ランダムに選ばれた場所を抽出
+world_random = world[random_points, ]
+nrow(world_random)
+#> [1] 4
+#st_joinを使ってrandom_pointsとworldのname_longを結合
+random_joined = st_join(random_points, world["name_long"])
+#world_random
+
+#cycle_hire
+#cycle_hire_osm
+
+#plot(st_geometry(cycle_hire), col = "blue")
+#plot(st_geometry(cycle_hire_osm), add = TRUE, pch = 3, col = "red")
+
+#cycle_hireとcycle_hire_osmの点が触れているか
+any(st_touches(cycle_hire, cycle_hire_osm, sparse = FALSE))
+#> [1] FALSE
+
+#座標系を変える(直交座標系)
+cycle_hire_P = st_transform(cycle_hire, 27700)
+cycle_hire_osm_P = st_transform(cycle_hire_osm, 27700)
+
+#20m以内にあるか
+sel = st_is_within_distance(cycle_hire_P, cycle_hire_osm_P, dist = 20)
+
+#sel
+
+summary(lengths(sel) > 0)
+#>    Mode   FALSE    TRUE 
+#> logical     304     438
+
+z = st_join(cycle_hire_P, cycle_hire_osm_P,
+            join = st_is_within_distance, dist = 20)
+nrow(cycle_hire)
+#> [1] 742
+nrow(z)
+#> [1] 762
+
+z = z %>% 
+  group_by(id) %>% 
+  summarize(capacity = mean(capacity))
+nrow(z) == nrow(cycle_hire)
+#> [1] TRUE
+
+plot(cycle_hire_osm["capacity"])
+plot(z["capacity"])
+
+#nzの区画ごとに高度平均をとる
+nz_avheight = aggregate(x = nz_height, by = nz, FUN = mean)
+
+plot(nz_avheight)
+#plot(nz_height)
+#plot(nz)
+
+#等価な操作
+#nz_avheight2 = nz %>%
+#  st_join(nz_height) %>%
+#  group_by(Name) %>%
+#  summarize(elevation = mean(elevation, na.rm = TRUE))
+
+#距離計算：st_distance
+nz_heighest = nz_height %>% top_n(n = 1, wt = elevation)
+canterbury_centroid = st_centroid(canterbury)
+st_distance(nz_heighest, canterbury_centroid)
+#> Units: [m]
+#>        [,1]
+#> [1,] 115540
+
+#ラスターから取り出し
+id = cellFromXY(elev, xy = c(0.1, 0.1))
+elev[id]
+# the same as
+raster::extract(elev, data.frame(x = 0.1, y = 0.1))
+#plot(elev)
+
+#ラスターからエリア範囲指定の取り出し
+clip = raster(xmn = 0.9, xmx = 1.8, ymn = -0.45, ymx = 0.45,
+              res = 0.3, vals = rep(1, 9))
+elev[clip]
+plot(clip)
+#> [1] 18 24
+# we can also use extract
+# extract(elev, extent(clip))
+
+#create raster mask
+rmask = elev 
+values(rmask) = sample(c(NA, TRUE), 36, replace = TRUE)
+
+# spatial subsetting
+elev[rmask, drop = FALSE]           # with [ operator
+mask(elev, rmask)                   # with mask()
+overlay(elev, rmask, fun = "max")   # with overlay
+
+#同じセルサイズ,同じ境界同士なら演算可能。
+elev + elev
+elev^2
+log(elev)
+elev > 5
+
+
+
+```
+
