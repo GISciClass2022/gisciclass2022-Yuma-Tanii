@@ -1,0 +1,78 @@
+---
+title: "learned-3"
+author: "Yuma Tanii"
+date: "2022/5/12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##5/10の講義課題
+
+```{r ready}
+library(sf)
+library(raster)
+library(dplyr)
+library(stringr) # for working with strings (pattern matching)
+library(tidyr)   # for unite() and separate()
+library(spData)
+library(spDataLarge)
+```
+##world_bank_bfというspDataにある経済系データを取り扱うものをworldに結合してみる。
+```{r 3.2.3}
+world
+
+worldbank_df
+#結合
+world_bk = left_join(world, worldbank_df)
+world_bk
+
+plot(world_bk["pop_growth"])
+plot(world_bk["urban_pop"])
+plot(world_bk["unemployment"])
+```
+
+
+
+##ポリゴンや線、点の形や位置を変えてみる。
+```{r 4.2}
+# create a polygon
+a_poly = st_polygon(list(rbind(c(-2, -1), c(0, -1), c(3, 4), c(-1, 4),c(-2, -1))))
+a = st_sfc(a_poly)
+# create a line
+l_line = st_linestring(x = matrix(c(-3, 2, 1.5, 3), ncol = 2))
+l = st_sfc(l_line)
+# create points
+p_matrix = matrix(c(-1, -2, 0, 3, 1.5, 2, 0, 4), ncol = 2)
+
+p_multi = st_multipoint(x = p_matrix)
+p = st_cast(st_sfc(p_multi), "POINT")
+
+plot(a, reset = FALSE)
+plot(l, add = TRUE)
+plot(p, add = TRUE)
+#ポイントpとポリゴンaは接しているか？(1,2は接している)
+st_intersects(p, a)
+st_intersects(p, a, sparse = FALSE)[, 1]
+#> [1]  TRUE FALSE TRUE TRUE
+
+#intersectの否定版（末尾の[, 1]はベクターに変形している）
+st_disjoint(p, a, sparse = FALSE)[, 1]
+
+#真に領域に入っているか？
+st_within(p, a, sparse = FALSE)[, 1]
+#> [1]  TRUE FALSE TRUE FALSE
+
+#境界線上の点か？
+st_touches(p, a, sparse = FALSE)[, 1]
+#> [1] FALSE  FALSE FALSE TRUE
+
+```
+
+
+
+
+
+
