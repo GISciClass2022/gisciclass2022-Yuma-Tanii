@@ -1,0 +1,45 @@
+---
+title: "for_report"
+author: "Yuma Tanii"
+date: "2022/5/31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r ready}
+library(sf)
+library(raster)
+library(dplyr)
+library(stringr)
+library(tidyr)
+
+library(spData)
+```
+
+```{r test1}
+world
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
