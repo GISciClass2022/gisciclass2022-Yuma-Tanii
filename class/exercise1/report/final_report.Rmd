@@ -21,47 +21,67 @@ bibliography: bibliography.bib
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r ready, include=FALSE}
+library(sf)
+library(raster)
+library(dplyr)
+library(stringr)
+library(tidyr)
+
+library(spData)
+
+library(tmap)    # for static and interactive maps
+library(leaflet) # for interactive maps
+library(ggplot2) # tidyverse data visualization package
+```
+
+```{r test1, include=FALSE}
+#データの読み込みと統合。
+STR1 = read.csv("f005-02-084-processing.csv")
+ORA1 = read.csv("f006-02-007-processing2.csv")
+adm = st_read("JPN/JPN_adm1.shp")
+JPN_STR2 = left_join(adm, STR1)
+JPN_ORA2 = left_join(adm, ORA1)
+```
+
+```{r test2, include=FALSE}
+#収穫量、出荷量、10a当たり収量の数字が文字列だったので数字に直す。
+JPN_STR3 = JPN_STR2 %>% mutate(H = gsub(",","",JPN_STR2$収穫量.t.) %>% as.numeric())
+JPN_STR3 = JPN_STR3 %>% mutate(Ship = gsub(",","",JPN_STR2$出荷量.t.) %>% as.numeric())
+JPN_STR3 = JPN_STR3 %>% mutate(X10a = gsub(",","",JPN_STR2$X10a当たり収量.kg.) %>% as.numeric())
+#JPN_STR3
+#直してtmapで表現。
+breaks1 = c(1,3,10,23)*1000
+map_JP = tm_shape(JPN_STR3) + tm_polygons(col ="H",palette="Blues",breaks =breaks1)
+map_JP
+```
+
 ## 0. 要旨
-AAAAAAAAAAAAAAAA. 
-BBBBBBBBBBBBBBBB. 
-CCCCCCCCCCCCCCC.   
-
-
-
-<br>
-<br>
+野菜や果物は、食生活での栄養、嗜好上で欠かせないものとなっている。
   
-  下のフォーマットは一例です。　
-レポートの構成は多少替えても大丈夫です。
+
 
 ## 1. はじめに
 ### 1.1 背景
-XXXXXXXX。 
-Toblerは... [@tobler1970computer]。
-XXXXXXXXXXXX。  
+
 
 ### 1.2 目的
-XXXXXXXX。   
+  
 
 ## 2. 手法
-XXXXXXXX。
-XXXXXXXXXXXX。  
+
 
 ## 3. データ
-XXXXXXXX。
-XXXXXXXXXXXX。  
+今回の分析に用いるデータとして、e-Stat(政府統計の総合窓口)の作物統計調査（https://www.e-stat.go.jp/stat-search/files?page=1&toukei=00500215&tstat=000001013427）　の野菜調査、および作況調査（果樹）の項目からそれぞれイチゴ、みかんの作付面積（結果樹面積）、10a当たりの収量、収穫量、そして出荷量を持つデータ）を使用する。なお今回はともに令和2年度（確報）のデータを用いる。
 
 ## 4. 結果
-XXXXXXXX。
-XXXXXXXXXXXX。  
+
 
 ## 5. 考察
-XXXXXXXX。
-XXXXXXXXXXXX。  
+
 
 ## 6. 結論
-XXXXXXXX。
-XXXXXXXXXXXX。  
+
 
 ## 7. Graphic Abstract
 レポートを表す１枚の図をここで示す。
