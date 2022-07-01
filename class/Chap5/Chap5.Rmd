@@ -1,0 +1,175 @@
+---
+title: "Chap5"
+author: "Yuma Tanii"
+date: "2022/5/3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r ready}
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+```
+
+```{r 5.2.1}
+seine_simp = st_simplify(seine, dTolerance = 2000)
+#容量を減らすため簡潔化
+plot(seine)
+plot(seine_simp)
+
+object.size(seine)      #18096 bytes
+object.size(seine_simp) #9112 bytes
+
+#ポリゴンの簡潔化
+us_states2163 = st_transform(us_states, 2163)
+
+us_states_simp1 = st_simplify(us_states2163, dTolerance = 100000)  # 100 km
+
+plot(us_states2163)
+plot(us_states_simp1)
+# proportion of points to retain (0-1; default 0.05)
+us_states2163$AREA = as.numeric(us_states2163$AREA)
+us_states_simp2 = rmapshaper::ms_simplify(us_states2163, keep = 0.01,
+                                          keep_shapes = TRUE)
+plot(us_states_simp2)
+```
+
+```{r 5.2.2}
+nz_centroid = st_centroid(nz)
+seine_centroid = st_centroid(seine)
+
+
+nz_pos = st_point_on_surface(nz)
+seine_pos = st_point_on_surface(seine)
+
+#川流域からの距離範囲の表示
+seine_buff_5km = st_buffer(seine, dist = 5000)
+seine_buff_50km = st_buffer(seine, dist = 50000)
+
+```
+
+```{r 5.2.6}
+regions = aggregate(x = us_states[, "total_pop_15"], by = list(us_states$REGION),
+                    FUN = sum, na.rm = TRUE)
+regions2 = us_states %>% group_by(REGION) %>%
+  summarize(pop = sum(total_pop_15, na.rm = TRUE))
+#> although coordinates are longitude/latitude, st_union assumes that they are planar
+#> although coordinates are longitude/latitude, st_union assumes that they are planar
+#> although coordinates are longitude/latitude, st_union assumes that they are planar
+#> although coordinates are longitude/latitude, st_union assumes that they are planar
+
+#plot(regions)
+#regions2
+
+#Regionがwestのところだけ抜き出し
+us_west = us_states[us_states$REGION == "West", ]
+
+us_west_union = st_union(us_west)
+#plot(us_west_union)
+#> although coordinates are longitude/latitude, st_union assumes that they are planar
+```
+
+```{r 5.2.7}
+
+multipoint = st_multipoint(matrix(c(1, 3, 5, 1, 3, 1), ncol = 2))
+
+#マルチポイント→ラインストリングやポリゴンへの変換
+linestring = st_cast(multipoint, "LINESTRING")
+polyg = st_cast(multipoint, "POLYGON")
+
+```
+
+```{r 5.3}
+#ラスターデータ
+data("elev", package = "spData")
+clip = raster(xmn = 0.9, xmx = 1.8, ymn = -0.45, ymx = 0.45,
+              res = 0.3, vals = rep(1, 9))
+elev[clip, drop = FALSE]
+#> class      : RasterLayer 
+#> dimensions : 2, 1, 2  (nrow, ncol, ncell)
+#> resolution : 0.5, 0.5  (x, y)
+#> extent     : 1, 1.5, -0.5, 0.5  (xmin, xmax, ymin, ymax)
+#> crs        : +proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0 
+#> source     : memory
+#> names      : layer 
+#> values     : 18, 24  (min, max)
+
+#
+data(elev, package = "spData")
+elev_2 = extend(elev, c(1, 2), value = 1000)
+plot(elev_2)
+
+```
+```{r 5.3.3}
+data("dem", package = "spDataLarge")
+#5倍粗くする
+dem_agg = aggregate(dem, fact = 5, fun = mean)
+
+#dem
+#dem_agg
+plot(dem)
+plot(dem_agg)
+
+dem_disagg = disaggregate(dem_agg, fact = 5, method = "bilinear")
+identical(dem, dem_disagg)
+#一回粗くして、元に戻しても一致しない。
+#> [1] FALSE
+plot(dem_disagg)
+```
+
+```{r 5.4.1}
+srtm = raster(system.file("raster/srtm.tif", package = "spDataLarge"))
+plot(srtm)
+zion = st_read(system.file("vector/zion.gpkg", package = "spDataLarge"))
+plot(zion)
+#座標系合わせ
+zion = st_transform(zion, projection(srtm))
+
+#切り抜き
+srtm_cropped = crop(srtm, zion)
+plot(srtm_cropped)
+
+#マスク掛け
+srtm_masked = mask(srtm, zion)
+plot(srtm_masked)
+
+#逆マスク掛け
+srtm_inv_masked = mask(srtm, zion, inverse = TRUE)
+plot(srtm_inv_masked)
+```
+
+```{r 5.4.2}
+data("zion_points", package = "spDataLarge")
+zion_points$elevation = raster::extract(srtm, zion_points)
+
+zion_nlcd = raster::extract(nlcd, zion, df = TRUE, factors = TRUE) 
+dplyr::select(zion_nlcd, ID, levels) %>% 
+  tidyr::gather(key, value, -ID) %>%
+  group_by(ID, key, value) %>%
+  tally() %>% 
+  tidyr::spread(value, n, fill = 0)
+```
+```{r 5.4.3}
+#ベクターをラスター化
+cycle_hire_osm_projected = st_transform(cycle_hire_osm, 27700)
+raster_template = raster(extent(cycle_hire_osm_projected), resolution = 1000,
+                         crs = st_crs(cycle_hire_osm_projected)$proj4string)
+
+plot(cycle_hire_osm_projected)
+#rasterizeで実行
+ch_raster1 = rasterize(cycle_hire_osm_projected, raster_template, field = 1)
+plot(ch_raster1)
+
+ch_raster2 = rasterize(cycle_hire_osm_projected, raster_template, field = 1, fun = "count")
+plot(ch_raster2)
+
+ch_raster3 = rasterize(cycle_hire_osm_projected, raster_template, field = "capacity", fun = sum)
+
+plot(ch_raster3)
+```

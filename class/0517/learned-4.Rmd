@@ -1,0 +1,66 @@
+---
+title: "Chap6"
+author: "Yuma Tanii"
+date: "2022/5/17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+各種ライブラリの準備。
+## R Markdown
+```{r ready}
+library(sf)
+library(raster)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+```
+]
+```{r 08-mapping-2, message=FALSE}
+library(tmap)    # for static and interactive maps
+library(leaflet) # for interactive maps
+library(ggplot2) # tidyverse data visualization package
+```
+
+色々なデータを読み込んでみる。
+```{r 7}
+adm = st_read("JPN_adm/JPN_adm0.shp")
+rds = st_read("JPN_rds/JPN_roads.shp")
+pop = raster("JPN_msk_pop/jpn_msk_pop.vrt")
+cov = raster("JPN_msk_cov/JPN_msk_cov.vrt")
+rail = st_read("JPN_rails.shp")
+```
+色々な図を作ってみる。
+```{r 7-2}
+map_jp = tm_shape(adm) + tm_polygons()
+map_jp2 = tm_shape(rds) + tm_lines(lwd=0.1)
+map_jp3 = tm_shape(adm) + tm_polygons() + tm_shape(rds) + tm_lines(lwd=0.1)
+map_jp4 = tm_shape(pop) + tm_raster(title = "Railroads and Population in Japan",) + tm_shape(rail) + tm_lines(lwd=0.1,col = "blue") 
+
+map_jp
+map_jp2
+map_jp3
+map_jp4
+#出力をファイルとして保存
+save_obj <- map_jp4
+tmap_save(tm = save_obj, filename = "Rail_and_Pop_in_JPN.png")
+```
+map_jp4をみると、線路が集中して張り巡らされた都市部がやはり人口が高いことがわかったりする。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

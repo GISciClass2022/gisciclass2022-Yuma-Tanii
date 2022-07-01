@@ -1,0 +1,49 @@
+---
+title: "Ex0426-2"
+author: "Yuma Tanii"
+date: "2022/4/26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r chapter3}
+library(sf)
+library(raster)
+library(dplyr)
+library(stringr) # for working with strings (pattern matching)
+library(tidyr)   # for unite() and separate()
+library(spData)
+```
+
+```{r chapter3-2}
+sel_area = world$area_km2 < 10000
+summary(sel_area) # a logical vector
+#>    Mode   FALSE    TRUE 
+#> logical     170       7
+small_countries = world[sel_area, ]
+#small_countries = world[world$area_km2 < 10000, ]
+#small_countries = subset(world, area_km2 < 10000)
+
+world1 = dplyr::select(world, name_long, pop)
+names(world1)
+
+world[]
+#GDP　TOP10
+world001 = world %>% top_n(n=10,wt = gdpPercap) %>% dplyr::select(name_long, gdpPercap)
+world001[]
+
+#GDP WORST10
+world002 = world %>% top_n(n=-10,wt = gdpPercap) %>% dplyr::select(name_long, gdpPercap)
+world002[]
+
+#GDP JPN IS ?
+gdp_sort <- world %>% dplyr::arrange(desc(gdpPercap)) %>% dplyr::select(gdpPercap) %>% st_drop_geometry()
+
+jp_gdp <- world %>% filter(name_long == "Japan") %>% dplyr::select(gdpPercap) %>% st_drop_geometry() %>% as.numeric()
+jp_gdp
+which(gdp_sort == jp_gdp)
+```
+
